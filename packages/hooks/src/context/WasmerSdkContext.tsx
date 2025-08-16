@@ -1,6 +1,5 @@
 import { createContext } from "react";
-
-export type LoadedSdkState = { state: "loaded" } & typeof import("@wasmer/sdk");
+import type { LoadedSdkState } from "@wasi-demo/core/src/client";
 
 export type WasmerSdkState =
   | LoadedSdkState

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import "./App.css";
-import { useWasmerSdk, type LoadedSdkState } from "@wasi-demo/hooks";
-import { initAppInline } from "@wasi-demo/core";
+import { useWasmerSdk } from "@wasi-demo/hooks";
+import { initAppInline, type LoadedSdkState } from "@wasi-demo/core";
 
 async function run(
   module: WebAssembly.Module,

@@ -29,3 +29,9 @@ export async function streamToString(
 ): Promise<string> {
   return await new Response(stream).text();
 }
+
+export async function streamToJson(
+  stream: ReadableStream<Uint8Array>,
+): Promise<unknown> {
+  return await new Response(stream).json();
+}
