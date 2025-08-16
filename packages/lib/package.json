@@ -1,0 +1,19 @@
+{
+  "name": "@wasi-demo/lib",
+  "version": "1.0.0",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "type": "module",
+  "files": [
+    "lib_bg.wasm",
+    "lib.js",
+    "lib.d.ts"
+  ],
+  "main": "lib.js",
+  "types": "lib.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
