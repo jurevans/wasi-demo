@@ -13,6 +13,7 @@
   "dependencies": {
     "@wasi-demo/hooks": "^1.0.0",
     "@wasi-demo/core": "^1.0.0",
+    "@wasi-demo/lib": "^1.0.0",
     "@wasmer/sdk": "^0.9.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

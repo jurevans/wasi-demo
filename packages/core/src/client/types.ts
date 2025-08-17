@@ -1,12 +1,13 @@
+import { MsgType } from "@wasi-demo/lib";
 export type LoadedSdkState = { state: "loaded" } & typeof import("@wasmer/sdk");
 
 export enum RequestType {
   Exit,
 }
 
-export type Msg<T = RequestType> = {
+export type Msg = {
   id: string;
-  type: T;
+  msg_type: MsgType;
   payload?: Uint8Array;
 };
 
@@ -16,7 +17,7 @@ export enum MsgResponseType {
   Error,
 }
 
-export type MsgResponse = Msg<MsgResponseType> & {
+export type MsgResponse = Msg & {
   status?: string;
   error?: string;
 };

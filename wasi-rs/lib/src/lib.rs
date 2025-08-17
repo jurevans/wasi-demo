@@ -1,4 +1,49 @@
+use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
+
+#[wasm_bindgen]
+#[derive(Serialize, Deserialize)]
+pub enum MsgType {
+    Request = 1,
+    Response = 2,
+}
+
+#[wasm_bindgen]
+#[derive(Serialize, Deserialize)]
+pub struct Msg {
+    id: String,
+    msg_type: MsgType,
+    payload: Vec<u8>,
+}
+
+#[wasm_bindgen]
+impl Msg {
+    #[wasm_bindgen(constructor)]
+    pub fn new(id: String, msg_type: MsgType, payload: Vec<u8>) -> Msg {
+        Msg {
+            id,
+            msg_type,
+            payload,
+        }
+    }
+
+    pub fn to_json(self) -> String {
+        serde_json::to_string(&self).expect("Should serialize to json")
+    }
+
+    pub fn from_json(json: &str) -> Msg {
+        let msg: Msg = serde_json::from_str(json).expect("Input should be Msg!");
+        msg
+    }
+
+    pub fn id(&self) -> String {
+        self.id.to_string()
+    }
+
+    pub fn payload(&self) -> Vec<u8> {
+        self.payload.clone()
+    }
+}
 
 #[wasm_bindgen]
 pub fn add(left: u64, right: u64) -> u64 {

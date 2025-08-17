@@ -2,21 +2,28 @@ import { useEffect, useState } from "react";
 import "./App.css";
 import { useWasmerSdk } from "@wasi-demo/hooks";
 import { initAppInline, type LoadedSdkState } from "@wasi-demo/core";
+import { default as init, Msg, MsgType } from "@wasi-demo/lib";
 
 async function run(
   module: WebAssembly.Module,
   sdk: LoadedSdkState,
-  input: string,
 ): Promise<string | void> {
   if (!sdk) {
     return;
   }
   const instance = await sdk.runWasix(module, {});
   if (instance.stdin) {
-    console.warn(`Writing "${input}" to stdin...`);
+    await init();
+    const msg = new Msg(
+      "1234abcd",
+      MsgType.Request,
+      new Uint8Array([0, 1, 2, 3]),
+    );
+    const json = msg.to_json();
+    console.warn(`Writing "${json}" to stdin...`);
     const stdin = instance.stdin.getWriter();
     const encoder = new TextEncoder();
-    const encodedInput = encoder.encode(input);
+    const encodedInput = encoder.encode(json);
 
     await stdin.write(encodedInput);
     await stdin.close();

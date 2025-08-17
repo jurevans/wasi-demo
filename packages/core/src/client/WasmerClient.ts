@@ -30,9 +30,9 @@ class WasmerClient {
     while (this._isReading) {
       reader.read().then(({ done, value }) => {
         try {
-          const json = JSON.parse(value);
-          const { id, type, payload, status, error } = json;
-          this.onRead({ id, type, payload, status, error });
+          const responseMsg = JSON.parse(value);
+          const { id, msg_type, payload, status, error } = responseMsg;
+          this.onRead({ id, msg_type, payload, status, error });
         } catch (e) {
           console.error(e);
           this._isReading = false;
