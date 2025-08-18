@@ -4,31 +4,34 @@ export function add(left: bigint, right: bigint): bigint;
 export enum MsgType {
   Request = 1,
   Response = 2,
+  Exit = 3,
 }
 export class Msg {
   free(): void;
+  constructor(id: string, msg_type: MsgType, payload: Uint8Array);
+  msg_type(): MsgType;
+  static from_json(json: string): Msg;
   id(): string;
   to_json(): string;
   payload(): Uint8Array;
-  static from_json(json: string): Msg;
-  constructor(id: string, msg_type: MsgType, payload: Uint8Array);
 }
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
-  readonly add: (a: bigint, b: bigint) => bigint;
-  readonly msg_to_json: (a: number) => [number, number];
-  readonly __wbg_msg_free: (a: number, b: number) => void;
-  readonly msg_new: (a: number, b: number, c: number, d: number, e: number) => number;
-  readonly msg_payload: (a: number) => [number, number];
   readonly msg_id: (a: number) => [number, number];
+  readonly msg_to_json: (a: number) => [number, number];
+  readonly msg_new: (a: number, b: number, c: number, d: number, e: number) => number;
+  readonly __wbg_msg_free: (a: number, b: number) => void;
+  readonly msg_msg_type: (a: number) => number;
+  readonly msg_payload: (a: number) => [number, number];
+  readonly add: (a: bigint, b: bigint) => bigint;
   readonly msg_from_json: (a: number, b: number) => number;
   readonly __wbindgen_export_0: WebAssembly.Table;
-  readonly __wbindgen_free: (a: number, b: number, c: number) => void;
   readonly __wbindgen_malloc: (a: number, b: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
+  readonly __wbindgen_free: (a: number, b: number, c: number) => void;
   readonly __wbindgen_start: () => void;
 }
 

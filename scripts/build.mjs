@@ -16,11 +16,7 @@ const argsOptions = {
   },
 };
 
-const {
-  wasiSdk = "/opt/wasi-sdk",
-  threaded = false,
-  release = true,
-} = parseArgs({
+const { wasiSdk = "/opt/wasi-sdk", release = true } = parseArgs({
   args: process.argv.slice(2),
   options: argsOptions,
 }).values;
@@ -53,7 +49,13 @@ const crates = ["app", "lib"];
 crates.forEach((crate) => {
   if (crate === "app") {
     const target = "wasm32-wasip1";
-    const CARGO_ARGS = ["build", ["--target", target], "--no-default-features"];
+    // const target = "wasm32-wasmer-wasi";
+    const CARGO_ARGS = [
+      // "wasix",
+      "build",
+      ["--target", target],
+      "--no-default-features",
+    ];
     if (release) {
       CARGO_ARGS.push("--release");
     } else {

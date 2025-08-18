@@ -1,14 +1,16 @@
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "wasm")]
 use wasm_bindgen::prelude::*;
 
-#[wasm_bindgen]
-#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "wasm", wasm_bindgen)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum MsgType {
     Request = 1,
     Response = 2,
+    Exit = 3,
 }
 
-#[wasm_bindgen]
+#[cfg_attr(feature = "wasm", wasm_bindgen)]
 #[derive(Serialize, Deserialize)]
 pub struct Msg {
     id: String,
@@ -16,9 +18,9 @@ pub struct Msg {
     payload: Vec<u8>,
 }
 
-#[wasm_bindgen]
+#[cfg_attr(feature = "wasm", wasm_bindgen)]
 impl Msg {
-    #[wasm_bindgen(constructor)]
+    #[cfg_attr(feature = "wasm", wasm_bindgen(constructor))]
     pub fn new(id: String, msg_type: MsgType, payload: Vec<u8>) -> Msg {
         Msg {
             id,
@@ -40,12 +42,16 @@ impl Msg {
         self.id.to_string()
     }
 
+    pub fn msg_type(&self) -> MsgType {
+        self.msg_type.clone()
+    }
+
     pub fn payload(&self) -> Vec<u8> {
         self.payload.clone()
     }
 }
 
-#[wasm_bindgen]
+#[cfg_attr(feature = "wasm", wasm_bindgen)]
 pub fn add(left: u64, right: u64) -> u64 {
     left + right
 }

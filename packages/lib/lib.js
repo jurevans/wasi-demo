@@ -17,20 +17,6 @@ function getStringFromWasm0(ptr, len) {
     ptr = ptr >>> 0;
     return cachedTextDecoder.decode(getUint8ArrayMemory0().subarray(ptr, ptr + len));
 }
-/**
- * @param {bigint} left
- * @param {bigint} right
- * @returns {bigint}
- */
-export function add(left, right) {
-    const ret = wasm.add(left, right);
-    return BigInt.asUintN(64, ret);
-}
-
-function getArrayU8FromWasm0(ptr, len) {
-    ptr = ptr >>> 0;
-    return getUint8ArrayMemory0().subarray(ptr / 1, ptr / 1 + len);
-}
 
 let WASM_VECTOR_LEN = 0;
 
@@ -95,11 +81,26 @@ function passArray8ToWasm0(arg, malloc) {
     return ptr;
 }
 /**
- * @enum {1 | 2}
+ * @param {bigint} left
+ * @param {bigint} right
+ * @returns {bigint}
+ */
+export function add(left, right) {
+    const ret = wasm.add(left, right);
+    return BigInt.asUintN(64, ret);
+}
+
+function getArrayU8FromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return getUint8ArrayMemory0().subarray(ptr / 1, ptr / 1 + len);
+}
+/**
+ * @enum {1 | 2 | 3}
  */
 export const MsgType = Object.freeze({
     Request: 1, "1": "Request",
     Response: 2, "2": "Response",
+    Exit: 3, "3": "Exit",
 });
 
 const MsgFinalization = (typeof FinalizationRegistry === 'undefined')
@@ -126,6 +127,38 @@ export class Msg {
     free() {
         const ptr = this.__destroy_into_raw();
         wasm.__wbg_msg_free(ptr, 0);
+    }
+    /**
+     * @param {string} id
+     * @param {MsgType} msg_type
+     * @param {Uint8Array} payload
+     */
+    constructor(id, msg_type, payload) {
+        const ptr0 = passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ptr1 = passArray8ToWasm0(payload, wasm.__wbindgen_malloc);
+        const len1 = WASM_VECTOR_LEN;
+        const ret = wasm.msg_new(ptr0, len0, msg_type, ptr1, len1);
+        this.__wbg_ptr = ret >>> 0;
+        MsgFinalization.register(this, this.__wbg_ptr, this);
+        return this;
+    }
+    /**
+     * @returns {MsgType}
+     */
+    msg_type() {
+        const ret = wasm.msg_msg_type(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {string} json
+     * @returns {Msg}
+     */
+    static from_json(json) {
+        const ptr0 = passStringToWasm0(json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.msg_from_json(ptr0, len0);
+        return Msg.__wrap(ret);
     }
     /**
      * @returns {string}
@@ -166,31 +199,6 @@ export class Msg {
         var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
         wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
         return v1;
-    }
-    /**
-     * @param {string} json
-     * @returns {Msg}
-     */
-    static from_json(json) {
-        const ptr0 = passStringToWasm0(json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.msg_from_json(ptr0, len0);
-        return Msg.__wrap(ret);
-    }
-    /**
-     * @param {string} id
-     * @param {MsgType} msg_type
-     * @param {Uint8Array} payload
-     */
-    constructor(id, msg_type, payload) {
-        const ptr0 = passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passArray8ToWasm0(payload, wasm.__wbindgen_malloc);
-        const len1 = WASM_VECTOR_LEN;
-        const ret = wasm.msg_new(ptr0, len0, msg_type, ptr1, len1);
-        this.__wbg_ptr = ret >>> 0;
-        MsgFinalization.register(this, this.__wbg_ptr, this);
-        return this;
     }
 }
 

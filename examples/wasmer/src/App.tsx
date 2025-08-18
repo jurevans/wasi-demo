@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 import { useWasmerSdk } from "@wasi-demo/hooks";
-import { initAppInline, type LoadedSdkState } from "@wasi-demo/core";
+import {
+  initAppInline,
+  WasmerClient,
+  type LoadedSdkState,
+} from "@wasi-demo/core";
 import { default as init, Msg, MsgType } from "@wasi-demo/lib";
 
 async function run(
@@ -15,7 +19,7 @@ async function run(
   if (instance.stdin) {
     await init();
     const msg = new Msg(
-      "1234abcd",
+      "d3e7adb3ee3f",
       MsgType.Request,
       new Uint8Array([0, 1, 2, 3]),
     );
@@ -29,10 +33,24 @@ async function run(
     await stdin.close();
 
     const result = await instance.wait();
-    console.warn("RESULTS!", { result });
     if (result.ok) {
       return result.stdout;
     }
+    // const client = new WasmerClient(sdk);
+    // await client.run(module);
+    // await client.connectStreams();
+    // client.dispatch(
+    //   new Msg("id1", MsgType.Request, new Uint8Array([1, 2, 3, 4])).to_json(),
+    // );
+    // client.dispatch(
+    //   new Msg("id2", MsgType.Request, new Uint8Array([1, 2, 3, 4])).to_json(),
+    // );
+    // setTimeout(() => {
+    //   console.warn("Exiting...");
+    //   client.dispatch(
+    //     new Msg("exit", MsgType.Exit, new Uint8Array()).to_json(),
+    //   );
+    // }, 2000);
   }
 }
 
@@ -43,12 +61,23 @@ function App() {
   useEffect(() => {
     if (sdk.state === "loaded") {
       initAppInline().then(async (module) => {
-        const output = await run(module, sdk, "It worked!");
+        const output = await run(module, sdk);
         console.warn({ module, output });
         if (output) {
           setResults(output);
         }
         console.warn(output);
+        // const client = new WasmerClient(sdk);
+        // await client.connectStreams();
+        // client.run(module);
+        // setTimeout(() => {
+        //   client.dispatch({
+        //     id: "",
+        //     msg_type: MsgType.Request,
+        //     payload: new Uint8Array([]),
+        //   });
+        // }, 2000);
+        //
       });
     }
   }, [sdk]);
@@ -56,11 +85,11 @@ function App() {
   return (
     <>
       <h1>Wasmer Demo</h1>
-      <div className="card">
+      <div className="w-2">
         {typeof results === "undefined" && (
           <div>Awaiting response from wasm...</div>
         )}
-        {results && <div>{results}</div>}
+        {results && <pre>{JSON.stringify(JSON.parse(results), null, 2)}</pre>}
       </div>
     </>
   );
