@@ -74,6 +74,11 @@ function passStringToWasm0(arg, malloc, realloc) {
     return ptr;
 }
 
+function getArrayU8FromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return getUint8ArrayMemory0().subarray(ptr / 1, ptr / 1 + len);
+}
+
 function passArray8ToWasm0(arg, malloc) {
     const ptr = malloc(arg.length * 1, 1) >>> 0;
     getUint8ArrayMemory0().set(arg, ptr / 1);
@@ -81,20 +86,9 @@ function passArray8ToWasm0(arg, malloc) {
     return ptr;
 }
 
-function getArrayU8FromWasm0(ptr, len) {
-    ptr = ptr >>> 0;
-    return getUint8ArrayMemory0().subarray(ptr / 1, ptr / 1 + len);
+function isLikeNone(x) {
+    return x === undefined || x === null;
 }
-/**
- * @param {bigint} left
- * @param {bigint} right
- * @returns {bigint}
- */
-export function add(left, right) {
-    const ret = wasm.add(left, right);
-    return BigInt.asUintN(64, ret);
-}
-
 /**
  * @enum {1 | 2 | 3}
  */
@@ -146,26 +140,60 @@ export class Msg {
         }
     }
     /**
-     * @param {string} id
-     * @param {MsgType} msg_type
-     * @param {Uint8Array} payload
+     * @returns {string}
      */
-    constructor(id, msg_type, payload) {
-        const ptr0 = passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    get id() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.__wbg_get_msg_id(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
+     * @param {string} arg0
+     */
+    set id(arg0) {
+        const ptr0 = passStringToWasm0(arg0, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passArray8ToWasm0(payload, wasm.__wbindgen_malloc);
-        const len1 = WASM_VECTOR_LEN;
-        const ret = wasm.msg_new(ptr0, len0, msg_type, ptr1, len1);
-        this.__wbg_ptr = ret >>> 0;
-        MsgFinalization.register(this, this.__wbg_ptr, this);
-        return this;
+        wasm.__wbg_set_msg_id(this.__wbg_ptr, ptr0, len0);
     }
     /**
      * @returns {MsgType}
      */
-    msg_type() {
-        const ret = wasm.msg_msg_type(this.__wbg_ptr);
+    get msg_type() {
+        const ret = wasm.__wbg_get_msg_msg_type(this.__wbg_ptr);
         return ret;
+    }
+    /**
+     * @param {MsgType} arg0
+     */
+    set msg_type(arg0) {
+        wasm.__wbg_set_msg_msg_type(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @returns {Uint8Array | undefined}
+     */
+    get payload() {
+        const ret = wasm.__wbg_get_msg_payload(this.__wbg_ptr);
+        let v1;
+        if (ret[0] !== 0) {
+            v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+            wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        }
+        return v1;
+    }
+    /**
+     * @param {Uint8Array | null} [arg0]
+     */
+    set payload(arg0) {
+        var ptr0 = isLikeNone(arg0) ? 0 : passArray8ToWasm0(arg0, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm.__wbg_set_msg_payload(this.__wbg_ptr, ptr0, len0);
     }
     /**
      * @param {string} json
@@ -178,28 +206,19 @@ export class Msg {
         return Msg.__wrap(ret);
     }
     /**
-     * @returns {Uint8Array}
+     * @param {string} id
+     * @param {MsgType} msg_type
+     * @param {Uint8Array | null} [payload]
      */
-    payload() {
-        const ret = wasm.msg_payload(this.__wbg_ptr);
-        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
-        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
-        return v1;
-    }
-    /**
-     * @returns {string}
-     */
-    id() {
-        let deferred1_0;
-        let deferred1_1;
-        try {
-            const ret = wasm.msg_id(this.__wbg_ptr);
-            deferred1_0 = ret[0];
-            deferred1_1 = ret[1];
-            return getStringFromWasm0(ret[0], ret[1]);
-        } finally {
-            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
-        }
+    constructor(id, msg_type, payload) {
+        const ptr0 = passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        var ptr1 = isLikeNone(payload) ? 0 : passArray8ToWasm0(payload, wasm.__wbindgen_malloc);
+        var len1 = WASM_VECTOR_LEN;
+        const ret = wasm.msg_new(ptr0, len0, msg_type, ptr1, len1);
+        this.__wbg_ptr = ret >>> 0;
+        MsgFinalization.register(this, this.__wbg_ptr, this);
+        return this;
     }
 }
 
