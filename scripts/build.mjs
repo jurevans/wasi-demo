@@ -48,10 +48,10 @@ const crates = ["app", "lib"];
 
 crates.forEach((crate) => {
   if (crate === "app") {
-    const target = "wasm32-wasip1";
-    // const target = "wasm32-wasmer-wasi";
+    // const target = "wasm32-wasip1";
+    const target = "wasm32-wasmer-wasi";
     const CARGO_ARGS = [
-      // "wasix",
+      "wasix",
       "build",
       ["--target", target],
       "--no-default-features",

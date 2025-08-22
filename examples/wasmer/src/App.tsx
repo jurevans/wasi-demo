@@ -3,7 +3,7 @@ import "./App.css";
 import { useWasmerSdk } from "@wasi-demo/hooks";
 import {
   initAppInline,
-  WasmerClient,
+  // WasmerClient,
   type LoadedSdkState,
 } from "@wasi-demo/core";
 import { default as init, Msg, MsgType } from "@wasi-demo/lib";
