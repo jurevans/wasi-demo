@@ -9,6 +9,7 @@ export type WasmerSdkProps = {
   log?: string;
   wasm?: Parameters<typeof init>[0];
   children: React.ReactElement;
+  token?: string;
 };
 
 // Note: The wasm-bindgen glue code only needs to be initialized once, and
@@ -29,6 +30,7 @@ export function WasmerSdkProvider(props?: WasmerSdkProps) {
         await imported.init({
           module: props?.wasm,
           log: props?.log,
+          token: props?.token,
         });
         return imported;
       })();

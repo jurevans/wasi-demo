@@ -1,61 +1,98 @@
-import type { Instance } from "@wasmer/sdk";
-import type { LoadedSdkState, Msg, MsgResponse } from "./types";
-import { streamToString } from "../utils";
+import type { Instance, Output } from "@wasmer/sdk";
+import type { LoadedSdkState, MsgResponse } from "./types";
 
 class WasmerClient {
   private _instance?: Instance;
-  private _isReading = false;
+  private _writer?: WritableStreamDefaultWriter;
 
   constructor(public readonly sdk: LoadedSdkState) {}
 
-  dispatch(msg: Msg): void {
-    if (!this._instance) {
+  dispatch(msg: string): void {
+    if (!this._writer) {
       return;
     }
-    const stdin = this._instance.stdin?.getWriter();
     const encoder = new TextEncoder();
-    stdin?.write(encoder.encode(JSON.stringify(msg)));
+    this._writer.write(encoder.encode(msg));
   }
 
-  async read(): Promise<void> {
+  async connectStreams(): Promise<void> {
     if (!this._instance) {
       return;
     }
-    const stderr = this._instance.stderr;
-    if (stderr) {
-      throw new Error(await streamToString(stderr));
-    }
-    const stdout = this._instance.stdout;
-    const reader = stdout.getReader();
-    while (this._isReading) {
-      reader.read().then(({ done, value }) => {
-        try {
-          const responseMsg = JSON.parse(value);
-          const { id, msg_type, payload, status, error } = responseMsg;
-          this.onRead({ id, msg_type, payload, status, error });
-        } catch (e) {
-          console.error(e);
-          this._isReading = false;
-        } finally {
-          if (done) {
-            this._isReading = false;
-          }
-        }
-      });
-    }
+    const decoder = new TextDecoder();
+    const stdoutStream = new WritableStream({
+      write(chunk) {
+        console.error("STDOUT", { chunk });
+        const msg = JSON.parse(decoder.decode(chunk));
+        WasmerClient.onRead(msg);
+      },
+    });
+    const stderrStream = new WritableStream({
+      write(chunk) {
+        console.error("STDERR", { chunk });
+        const msg = decoder.decode(chunk);
+        // WasmerClient.onRead(msg);
+        console.error("onError", msg);
+      },
+    });
+    this._instance.stdout!.pipeTo(stdoutStream);
+    this._instance.stderr!.pipeTo(stderrStream);
+    this._writer = this._instance.stdin?.getWriter();
   }
 
-  async onRead(msg: MsgResponse): Promise<void> {
-    console.info("onRead", msg);
+  close() {
+    this._writer?.close();
   }
 
-  async run(module: WebAssembly.Module): Promise<string | void> {
+  static onRead(msg: MsgResponse): void {
+    alert(msg);
+    console.warn("onRead", msg);
+  }
+
+  async run(
+    module: WebAssembly.Module,
+    wait = false,
+  ): Promise<Output | undefined> {
     if (!this.sdk) {
       return;
     }
     this._instance = await this.sdk.runWasix(module, {});
-    this._isReading = true;
+    if (wait) {
+      this._instance.wait();
+    }
   }
 }
 
 export default WasmerClient;
+
+/**
+ * Testing
+ */
+export async function connectStreams(
+  instance: Instance,
+  onErr: (data: string) => void,
+  onRead: (data: string) => void,
+): Promise<WritableStreamDefaultWriter> {
+  const decoder = new TextDecoder();
+  const stdoutStream = new WritableStream({
+    write(chunk) {
+      const msg = decoder.decode(chunk);
+      onRead(msg);
+    },
+  });
+  const stderrStream = new WritableStream({
+    write(chunk) {
+      const msg = decoder.decode(chunk);
+      onErr(msg);
+    },
+  });
+  console.log("connectStreams", {
+    instance,
+    stdout: instance.stdout,
+    stdin: instance.stdin,
+    stderrr: instance.stderr,
+  });
+  instance.stdout!.pipeTo(stdoutStream);
+  instance.stderr!.pipeTo(stderrStream);
+  return instance.stdin!.getWriter();
+}

@@ -1,3 +1,3 @@
-export { default as initAppInline } from "./initAppInline";
+export * from "./initApp";
 export * from "./client";
 export * from "./utils";
