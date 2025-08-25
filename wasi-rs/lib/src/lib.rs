@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{self, Deserialize, Serialize};
 #[cfg(feature = "wasm")]
 use wasm_bindgen::prelude::*;
 
@@ -31,12 +31,21 @@ impl Msg {
         }
     }
 
-    pub fn to_json(self) -> String {
-        serde_json::to_string(&self).expect("Should serialize to json")
+    pub fn to_json(&self) -> String {
+        serde_json::to_string(self).expect("Should serialize to json")
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        serde_json::to_vec(self).expect("asdf")
     }
 
     pub fn from_json(json: &str) -> Msg {
         let msg: Msg = serde_json::from_str(json).expect("Input should be Msg!");
+        msg
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Msg {
+        let msg: Msg = serde_json::from_slice(bytes).expect("Input should be Msg!");
         msg
     }
 }

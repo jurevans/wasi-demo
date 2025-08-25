@@ -41,10 +41,33 @@ const C_ENV = {
 };
 
 const WORKSPACE = "wasi-rs";
+// const RUSTFLAGS = "-C target-feature=+atomics,+bulk-memory,+mutable-globals";
 const RUSTFLAGS = "";
 
 const env = { ...process.env, RUSTFLAGS, ...WASI_ENV, ...C_ENV };
-const crates = ["app", "lib"];
+const crates = ["app", "lib", "runtime"];
+
+const wasmPackBuilder = (crate) => {
+  // wasm-pack packages
+  const { status } = spawnSync(
+    "wasm-pack",
+    ["build", release ? "--release" : "", ["--target", "web"]].flat(),
+    {
+      stdio: "inherit",
+      cwd: `./${WORKSPACE}/${crate}`,
+    },
+  );
+  if (status !== 0) {
+    process.exit(status);
+  }
+
+  const pkg = `./${WORKSPACE}/${crate}/pkg`;
+  execSync(`cp ${pkg}/${crate}_bg.wasm ./packages/${crate}/`);
+  execSync(`cp ${pkg}/${crate}.js ./packages/${crate}/`);
+  execSync(`cp ${pkg}/${crate}.d.ts ./packages/${crate}/`);
+  // TODO: Enable if you have snippets:
+  // execSync(`cp -r ${pkg}/snippets ./packages/lib/`);
+};
 
 crates.forEach((crate) => {
   if (crate === "app") {
@@ -73,23 +96,6 @@ crates.forEach((crate) => {
       `cp ./${WORKSPACE}/target/${target}/${release ? "release" : "debug"}/${crate}.wasm ./packages/core/src/wasm/`,
     );
   } else {
-    const { status } = spawnSync(
-      "wasm-pack",
-      ["build", release ? "--release" : "", ["--target", "web"]].flat(),
-      {
-        stdio: "inherit",
-        cwd: `./${WORKSPACE}/${crate}`,
-      },
-    );
-    const pkg = `./${WORKSPACE}/${crate}/pkg`;
-    execSync(`cp ${pkg}/lib_bg.wasm ./packages/lib/`);
-    execSync(`cp ${pkg}/lib.js ./packages/lib/`);
-    execSync(`cp ${pkg}/lib.d.ts ./packages/lib/`);
-    // TODO: Enable if you have snippets:
-    // execSync(`cp -r ${pkg}/snippets ./packages/lib/`);
-
-    if (status !== 0) {
-      process.exit(status);
-    }
+    wasmPackBuilder(crate);
   }
 });

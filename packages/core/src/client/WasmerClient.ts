@@ -64,3 +64,35 @@ class WasmerClient {
 }
 
 export default WasmerClient;
+
+/**
+ * Testing
+ */
+export async function connectStreams(
+  instance: Instance,
+  onErr: (data: string) => void,
+  onRead: (data: string) => void,
+): Promise<WritableStreamDefaultWriter> {
+  const decoder = new TextDecoder();
+  const stdoutStream = new WritableStream({
+    write(chunk) {
+      const msg = decoder.decode(chunk);
+      onRead(msg);
+    },
+  });
+  const stderrStream = new WritableStream({
+    write(chunk) {
+      const msg = decoder.decode(chunk);
+      onErr(msg);
+    },
+  });
+  console.log("connectStreams", {
+    instance,
+    stdout: instance.stdout,
+    stdin: instance.stdin,
+    stderrr: instance.stderr,
+  });
+  instance.stdout!.pipeTo(stdoutStream);
+  instance.stderr!.pipeTo(stderrStream);
+  return instance.stdin!.getWriter();
+}

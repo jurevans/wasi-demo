@@ -1,36 +1,62 @@
 use lib::{Msg, MsgType};
 use std::io::{self, Write};
-use std::thread;
+// use std::sync::mpsc;
+// use std::thread;
 
 fn main() {
-    // TODO: Bring tx/rx channel back
+    let mut msg_input = String::new();
+    io::stdin()
+        .read_line(&mut msg_input)
+        .expect("Failed to read msg");
+
+    let msg: Msg = Msg::from_json(&msg_input);
+
+    let output = Msg::new(
+        format!("response-for-{}", msg.id),
+        MsgType::Response,
+        Some(msg.to_bytes()),
+    );
+
+    io::stdout()
+        .write(format!("{}\n", output.to_json()).to_string().as_bytes())
+        .expect("Failed to write to STDOUT");
+    io::stdout().flush().expect("Failed to flush STDOUT");
+
     // let (tx, rx) = mpsc::channel();
 
     // Msg Handler thread
-    let handle = thread::spawn(|| {
-        loop {
-            let mut msg_input = String::new();
-            io::stdin()
-                .read_line(&mut msg_input)
-                .expect("Failed to read msg");
-
-            let msg: Msg = Msg::from_json(&msg_input);
-
-            match msg.msg_type {
-                MsgType::Exit => {
-                    io::stdout()
-                        .write("Exiting...".to_string().as_bytes())
-                        .expect("should work");
-                    break;
-                }
-                _ => {
-                    let res_msg = Msg::new(msg.id, MsgType::Response, msg.payload);
-                    let output = res_msg.to_json();
-                    println!("{}", output.to_string());
-                }
-            }
-        }
-    });
-
-    handle.join().unwrap();
+    // thread::spawn(move || {
+    //     loop {
+    //         let mut msg_input = String::new();
+    //         io::stdin()
+    //             .read_line(&mut msg_input)
+    //             .expect("Failed to read msg");
+    //
+    //         let msg: Msg = Msg::from_json(&msg_input);
+    //
+    //         match msg.msg_type {
+    //             MsgType::Exit => {
+    //                 let res = Msg::new(format!("exit::{}", msg.id), MsgType::Response, None);
+    //                 tx.send(res.to_json()).expect("Failed to send message");
+    //                 break;
+    //             }
+    //             _ => {
+    //                 let res = Msg::new(
+    //                     format!("res-{}", msg.id),
+    //                     MsgType::Response,
+    //                     Some(msg.to_bytes()),
+    //                 );
+    //                 tx.send(res.to_json()).expect("Failed to send message");
+    //             }
+    //         }
+    //     }
+    // });
+    //
+    // // Main thread (for processing output)
+    // for msg in rx {
+    //     io::stdout()
+    //         .write(format!("{}\n", msg).to_string().as_bytes())
+    //         .expect("Failed to write to STDOUT");
+    //     io::stdout().flush().expect("Failed to flush STDOUT");
+    // }
 }
