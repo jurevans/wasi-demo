@@ -1,9 +1,5 @@
 let wasm;
 
-const cachedTextDecoder = (typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }) : { decode: () => { throw Error('TextDecoder not available') } } );
-
-if (typeof TextDecoder !== 'undefined') { cachedTextDecoder.decode(); };
-
 let cachedUint8ArrayMemory0 = null;
 
 function getUint8ArrayMemory0() {
@@ -13,9 +9,25 @@ function getUint8ArrayMemory0() {
     return cachedUint8ArrayMemory0;
 }
 
+let cachedTextDecoder = (typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }) : { decode: () => { throw Error('TextDecoder not available') } } );
+
+if (typeof TextDecoder !== 'undefined') { cachedTextDecoder.decode(); };
+
+const MAX_SAFARI_DECODE_BYTES = 2146435072;
+let numBytesDecoded = 0;
+function decodeText(ptr, len) {
+    numBytesDecoded += len;
+    if (numBytesDecoded >= MAX_SAFARI_DECODE_BYTES) {
+        cachedTextDecoder = (typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }) : { decode: () => { throw Error('TextDecoder not available') } } );
+        cachedTextDecoder.decode();
+        numBytesDecoded = len;
+    }
+    return cachedTextDecoder.decode(getUint8ArrayMemory0().subarray(ptr, ptr + len));
+}
+
 function getStringFromWasm0(ptr, len) {
     ptr = ptr >>> 0;
-    return cachedTextDecoder.decode(getUint8ArrayMemory0().subarray(ptr, ptr + len));
+    return decodeText(ptr, len);
 }
 
 let WASM_VECTOR_LEN = 0;
@@ -112,6 +124,19 @@ export class Msg {
         return obj;
     }
 
+    toJSON() {
+        return {
+            id: this.id,
+            msg_type: this.msg_type,
+            payload: this.payload,
+            bytes: this.bytes,
+        };
+    }
+
+    toString() {
+        return JSON.stringify(this);
+    }
+
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
@@ -180,16 +205,6 @@ export class Msg {
         wasm.__wbg_set_msg_payload(this.__wbg_ptr, ptr0, len0);
     }
     /**
-     * @param {Uint8Array} bytes
-     * @returns {Msg}
-     */
-    static from_bytes(bytes) {
-        const ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_malloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.msg_from_bytes(ptr0, len0);
-        return Msg.__wrap(ret);
-    }
-    /**
      * @param {string} id
      * @param {MsgType} msg_type
      * @param {Uint8Array | null} [payload]
@@ -205,13 +220,31 @@ export class Msg {
         return this;
     }
     /**
+     * @returns {Uint8Array}
+     */
+    toBytes() {
+        const ret = wasm.msg_toBytes(this.__wbg_ptr);
+        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        return v1;
+    }
+    /**
+     * @returns {Uint8Array}
+     */
+    get bytes() {
+        const ret = wasm.msg_bytes(this.__wbg_ptr);
+        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        return v1;
+    }
+    /**
      * @returns {string}
      */
-    to_json() {
+    toJson() {
         let deferred1_0;
         let deferred1_1;
         try {
-            const ret = wasm.msg_to_json(this.__wbg_ptr);
+            const ret = wasm.msg_toJson(this.__wbg_ptr);
             deferred1_0 = ret[0];
             deferred1_1 = ret[1];
             return getStringFromWasm0(ret[0], ret[1]);
@@ -220,25 +253,28 @@ export class Msg {
         }
     }
     /**
-     * @returns {Uint8Array}
-     */
-    to_bytes() {
-        const ret = wasm.msg_to_bytes(this.__wbg_ptr);
-        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
-        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
-        return v1;
-    }
-    /**
      * @param {string} json
      * @returns {Msg}
      */
-    static from_json(json) {
+    static fromJson(json) {
         const ptr0 = passStringToWasm0(json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.msg_from_json(ptr0, len0);
+        const ret = wasm.msg_fromJson(ptr0, len0);
+        return Msg.__wrap(ret);
+    }
+    /**
+     * @param {Uint8Array} bytes
+     * @returns {Msg}
+     */
+    static fromBytes(bytes) {
+        const ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.msg_fromBytes(ptr0, len0);
         return Msg.__wrap(ret);
     }
 }
+
+const EXPECTED_RESPONSE_TYPES = new Set(['basic', 'cors', 'default']);
 
 async function __wbg_load(module, imports) {
     if (typeof Response === 'function' && module instanceof Response) {
@@ -247,7 +283,9 @@ async function __wbg_load(module, imports) {
                 return await WebAssembly.instantiateStreaming(module, imports);
 
             } catch (e) {
-                if (module.headers.get('Content-Type') != 'application/wasm') {
+                const validResponse = module.ok && EXPECTED_RESPONSE_TYPES.has(module.type);
+
+                if (validResponse && module.headers.get('Content-Type') !== 'application/wasm') {
                     console.warn("`WebAssembly.instantiateStreaming` failed because your server does not serve Wasm with `application/wasm` MIME type. Falling back to `WebAssembly.instantiate` which is slower. Original error:\n", e);
 
                 } else {

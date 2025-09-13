@@ -3,23 +3,19 @@ import {
   Runtime,
   type RuntimeOptions,
   type RunOptions,
-  Instance,
   type PackageManifest,
   type PackageCommand,
 } from "@wasmer/sdk";
-// @ts-ignore
-import appWasmUrl from "./wasm/app.wasm?url";
-import type { LoadedSdkState } from "./client";
 
 /**
  * Wasm Initializers for Vite projects
  */
-export async function initWasm(): Promise<WebAssembly.Module> {
-  return WebAssembly.compileStreaming(fetch(appWasmUrl));
+export async function initApp(wasmUrl: string): Promise<WebAssembly.Module> {
+  return WebAssembly.compileStreaming(fetch(wasmUrl));
 }
 
-export async function wasmBytes(): Promise<Uint8Array> {
-  return fetch(appWasmUrl).then((res) => {
+export async function wasmBytes(wasmUrl: string): Promise<Uint8Array> {
+  return fetch(wasmUrl).then((res) => {
     if (!res.ok) {
       throw new Error("Could not fetch app.wasm!");
     }
@@ -27,8 +23,8 @@ export async function wasmBytes(): Promise<Uint8Array> {
   });
 }
 
-export async function initWasmerApp(): Promise<Wasmer> {
-  const bytes = await wasmBytes();
+export async function initWasmerApp(wasmUrl: string): Promise<Wasmer> {
+  const bytes = await wasmBytes(wasmUrl);
   const runtimeOptions: RuntimeOptions = {
     registry: "https://webc.org/runner/wasi",
   };
@@ -39,10 +35,10 @@ export async function initWasmerApp(): Promise<Wasmer> {
   return Wasmer.fromWasm(bytes, runOptions.runtime);
 }
 
-export async function initPackage(): Promise<Wasmer> {
+export async function initPackage(wasmUrl: string): Promise<Wasmer> {
   const command: PackageCommand[] = [
     {
-      module: appWasmUrl,
+      module: wasmUrl,
       name: "app",
       runner: "https://webc.org/runner/wasi",
       annotations: {
@@ -61,15 +57,3 @@ export async function initPackage(): Promise<Wasmer> {
   let pkg = await Wasmer.createPackage(manifest);
   return pkg;
 }
-
-export async function runWasixApp(sdk: LoadedSdkState): Promise<Instance> {
-  const bytes = await wasmBytes();
-  const runtimeOptions: RuntimeOptions = {};
-  const runOptions: RunOptions = {
-    program: "app",
-    runtime: new Runtime(runtimeOptions),
-  };
-  return await sdk.runWasix(bytes, runOptions);
-}
-
-export { appWasmUrl as wasm };

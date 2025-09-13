@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 import { useWasmerSdk } from "@wasi-demo/hooks";
-import { initWasmerApp } from "@wasi-demo/core";
 import { default as initLib, Msg, MsgType } from "@wasi-demo/lib";
-import { connectStreams } from "@wasi-demo/core/src/client/WasmerClient";
-import { Directory, type Wasmer, type SpawnOptions } from "@wasmer/sdk";
+import { connectStreams, runWasiApp } from "@wasi-demo/core";
+import { Instance } from "@wasmer/sdk";
 
 function App() {
   const [results, setResults] = useState<string>();
@@ -33,40 +32,22 @@ function App() {
         setError(error);
       };
 
-      // initWasm().then(async (module) => {
-      // const instance = await sdk.runWasix(module, {});
-
-      initWasmerApp().then(async (wasmer: Wasmer) => {
+      runWasiApp(sdk).then(async (instance: Instance) => {
         await initLib();
         const request = new Msg(
           "asdfasdf",
           MsgType.Request,
           new Uint8Array([0, 1, 2, 3]),
         );
-        const home = new Directory();
-        const opts: SpawnOptions = {
-          mount: { "/home": home },
-          cwd: "/home",
-          env: {},
-          // uses: ["wasmer/coreutils"],
-          // uses: ["wasi/unstable"],
-        };
-        const instance = await wasmer.entrypoint!.run(opts);
-        const writer = await connectStreams(instance, onStdOut, onStdErr);
+        const requester = await connectStreams(instance, onStdOut, onStdErr);
 
-        // await instance.wait();
-        const encoder = new TextEncoder();
-        const input = request.to_json();
+        const input = request.toJson();
 
-        console.warn("Writing input: ", input, writer);
-        await writer.write(encoder.encode(input));
-        await writer.write(encoder.encode(input));
-        await writer.write(encoder.encode(input));
+        console.warn("Writing input: ", input, requester);
+        requester.write(input);
 
         setTimeout(async () => {
-          await writer.write(
-            encoder.encode(new Msg("exit_id", MsgType.Exit).to_json()),
-          );
+          requester.write(new Msg("exit_id", MsgType.Exit).toJson());
         }, 2000);
       });
     }

@@ -1,21 +1,22 @@
 /* tslint:disable */
 /* eslint-disable */
-export class JsRuntime {
+/**
+ * Simple example using wat
+ */
+export function do_add_one_in_wasmer(): number;
+export class Runtime {
+  private constructor();
   free(): void;
-  startWasmer(): void;
-  constructor(bytes: Uint8Array);
-  bytes: Uint8Array;
 }
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
-  readonly __wbg_get_jsruntime_bytes: (a: number) => [number, number];
-  readonly __wbg_jsruntime_free: (a: number, b: number) => void;
-  readonly __wbg_set_jsruntime_bytes: (a: number, b: number, c: number) => void;
+  readonly __wbg_runtime_free: (a: number, b: number) => void;
   readonly jsruntime_new: (a: number, b: number) => number;
-  readonly jsruntime_startWasmer: (a: number) => void;
+  readonly jsruntime_run: (a: number) => void;
+  readonly do_add_one_in_wasmer: () => number;
   readonly __wbg_trap_free: (a: number, b: number) => void;
   readonly trap___wbg_wasmer_trap: () => void;
   readonly __wbindgen_exn_store: (a: number) => void;
@@ -23,7 +24,6 @@ export interface InitOutput {
   readonly __wbindgen_export_2: WebAssembly.Table;
   readonly __wbindgen_malloc: (a: number, b: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
-  readonly __wbindgen_free: (a: number, b: number, c: number) => void;
   readonly __wbindgen_start: () => void;
 }
 

@@ -1,5 +1,5 @@
 [package]
-name = "app"
+name = "wasix"
 version = "0.1.0"
 edition = "2024"
 description = "Wasix app"
@@ -7,4 +7,4 @@ repository = "https://github.com/jurevans/wasi-demo"
 license = "MIT"
 
 [dependencies]
-lib = { path = "../lib", default-features = false, features = [] }
+lib = { path = "../../lib", default-features = false, features = [] }

@@ -44,10 +44,34 @@ const WORKSPACE = "wasi-rs";
 // const RUSTFLAGS = "-C target-feature=+atomics,+bulk-memory,+mutable-globals";
 const RUSTFLAGS = "";
 
-const env = { ...process.env, RUSTFLAGS, ...WASI_ENV, ...C_ENV };
-const crates = ["app", "lib", "runtime"];
+const Target = Object.freeze({
+  Wasm: "wasm32-unknown-unknown",
+  Wasi: "wasm32-wasip1",
+  Wasix: "wasm32-wasmer-wasi",
+});
 
-const wasmPackBuilder = (crate) => {
+const env = { ...process.env, RUSTFLAGS, ...WASI_ENV, ...C_ENV };
+const crates = [
+  {
+    crate: "apps/wasi",
+    target: Target.Wasi,
+  },
+  {
+    crate: "apps/wasix",
+    target: Target.Wasix,
+  },
+  {
+    crate: "runtime",
+    target: Target.Wasm,
+  },
+  {
+    crate: "lib",
+    target: Target.Wasm,
+  },
+];
+
+const wasmPackBuilder = ({ crate, target }) => {
+  console.log("WASM", crate, target);
   // wasm-pack packages
   const { status } = spawnSync(
     "wasm-pack",
@@ -69,33 +93,38 @@ const wasmPackBuilder = (crate) => {
   // execSync(`cp -r ${pkg}/snippets ./packages/lib/`);
 };
 
-crates.forEach((crate) => {
-  if (crate === "app") {
-    // const target = "wasm32-wasip1";
-    const target = "wasm32-wasmer-wasi";
-    const CARGO_ARGS = [
-      "wasix",
-      "build",
-      ["--target", target],
-      "--no-default-features",
-    ];
-    if (release) {
-      CARGO_ARGS.push("--release");
-    } else {
-      env["RUST_BACKTRACE"] = 1;
-    }
-    const { status } = spawnSync("cargo", CARGO_ARGS.flat(), {
-      stdio: "inherit",
-      cwd: `./${WORKSPACE}/${crate}`,
-      env,
-    });
-    if (status !== 0) {
-      process.exit(status);
-    }
-    execSync(
-      `cp ./${WORKSPACE}/target/${target}/${release ? "release" : "debug"}/${crate}.wasm ./packages/core/src/wasm/`,
-    );
+const wasiBuilder = ({ crate, target }) => {
+  const app = crate.split("/")[1];
+  const CARGO_ARGS = [];
+  if (target === Target.Wasix) {
+    CARGO_ARGS.push("wasix");
+  }
+
+  CARGO_ARGS.push(...["build", ["--target", target]]);
+  if (release) {
+    CARGO_ARGS.push("--release");
   } else {
+    env["RUST_BACKTRACE"] = 1;
+  }
+  console.log(CARGO_ARGS);
+  const { status } = spawnSync("cargo", CARGO_ARGS.flat(), {
+    stdio: "inherit",
+    cwd: `./${WORKSPACE}/${crate}`,
+    env,
+  });
+  if (status !== 0) {
+    process.exit(status);
+  }
+  execSync(`mkdir -p ./packages/core/src/wasm/apps/${app}/`);
+  execSync(
+    `cp ./${WORKSPACE}/target/${target}/${release ? "release" : "debug"}/${app}.wasm ./packages/core/src/wasm/apps/${app}/`,
+  );
+};
+
+crates.forEach((crate) => {
+  if (crate.target === Target.Wasm) {
     wasmPackBuilder(crate);
+  } else {
+    wasiBuilder(crate);
   }
 });
