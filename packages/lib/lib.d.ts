@@ -1,30 +1,49 @@
 /* tslint:disable */
 /* eslint-disable */
-export function add(left: bigint, right: bigint): bigint;
 export enum MsgType {
   Request = 1,
   Response = 2,
+  Exit = 3,
 }
 export class Msg {
+/**
+** Return copy of self without private attributes.
+*/
+  toJSON(): Object;
+/**
+* Return stringified version of self.
+*/
+  toString(): string;
   free(): void;
-  id(): string;
-  to_json(): string;
-  payload(): Uint8Array;
-  static from_json(json: string): Msg;
-  constructor(id: string, msg_type: MsgType, payload: Uint8Array);
+  constructor(id: string, msg_type: MsgType, payload?: Uint8Array | null);
+  toBytes(): Uint8Array;
+  toJson(): string;
+  static fromJson(json: string): Msg;
+  static fromBytes(bytes: Uint8Array): Msg;
+  id: string;
+  msg_type: MsgType;
+  get payload(): Uint8Array | undefined;
+  set payload(value: Uint8Array | null | undefined);
+  readonly bytes: Uint8Array;
 }
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
-  readonly add: (a: bigint, b: bigint) => bigint;
-  readonly msg_to_json: (a: number) => [number, number];
   readonly __wbg_msg_free: (a: number, b: number) => void;
+  readonly __wbg_get_msg_id: (a: number) => [number, number];
+  readonly __wbg_set_msg_id: (a: number, b: number, c: number) => void;
+  readonly __wbg_get_msg_msg_type: (a: number) => number;
+  readonly __wbg_set_msg_msg_type: (a: number, b: number) => void;
+  readonly __wbg_get_msg_payload: (a: number) => [number, number];
+  readonly __wbg_set_msg_payload: (a: number, b: number, c: number) => void;
   readonly msg_new: (a: number, b: number, c: number, d: number, e: number) => number;
-  readonly msg_payload: (a: number) => [number, number];
-  readonly msg_id: (a: number) => [number, number];
-  readonly msg_from_json: (a: number, b: number) => number;
+  readonly msg_bytes: (a: number) => [number, number];
+  readonly msg_toJson: (a: number) => [number, number];
+  readonly msg_fromJson: (a: number, b: number) => number;
+  readonly msg_fromBytes: (a: number, b: number) => number;
+  readonly msg_toBytes: (a: number) => [number, number];
   readonly __wbindgen_export_0: WebAssembly.Table;
   readonly __wbindgen_free: (a: number, b: number, c: number) => void;
   readonly __wbindgen_malloc: (a: number, b: number) => number;

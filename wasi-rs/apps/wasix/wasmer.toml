@@ -1,0 +1,20 @@
+[package]
+name = "@wasi-demo/wasix-app"
+version = "0.1.0"
+description = "Description for package app"
+
+# See more keys and definitions at https://docs.wasmer.io/registry/manifest
+
+[[module]]
+name = "app"
+source = "../target/wasm32-wasmer-wasi/release/app.wasm"
+abi = "wasi"
+
+[module.interfaces]
+wasi = "0.1.0-unstable"
+
+[[command]]
+name = "app"
+module = "app"
+# runner = "wasi"
+runner = "https://webc.org/runner/wasi"

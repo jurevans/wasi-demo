@@ -16,11 +16,7 @@ const argsOptions = {
   },
 };
 
-const {
-  wasiSdk = "/opt/wasi-sdk",
-  threaded = false,
-  release = true,
-} = parseArgs({
+const { wasiSdk = "/opt/wasi-sdk", release = true } = parseArgs({
   args: process.argv.slice(2),
   options: argsOptions,
 }).values;
@@ -45,49 +41,90 @@ const C_ENV = {
 };
 
 const WORKSPACE = "wasi-rs";
+// const RUSTFLAGS = "-C target-feature=+atomics,+bulk-memory,+mutable-globals";
 const RUSTFLAGS = "";
 
-const env = { ...process.env, RUSTFLAGS, ...WASI_ENV, ...C_ENV };
-const crates = ["app", "lib"];
+const Target = Object.freeze({
+  Wasm: "wasm32-unknown-unknown",
+  Wasi: "wasm32-wasip1",
+  Wasix: "wasm32-wasmer-wasi",
+});
 
-crates.forEach((crate) => {
-  if (crate === "app") {
-    const target = "wasm32-wasip1";
-    const CARGO_ARGS = ["build", ["--target", target], "--no-default-features"];
-    if (release) {
-      CARGO_ARGS.push("--release");
-    } else {
-      env["RUST_BACKTRACE"] = 1;
-    }
-    const { status } = spawnSync("cargo", CARGO_ARGS.flat(), {
+const env = { ...process.env, RUSTFLAGS, ...WASI_ENV, ...C_ENV };
+const crates = [
+  {
+    crate: "apps/wasi",
+    target: Target.Wasi,
+  },
+  {
+    crate: "apps/wasix",
+    target: Target.Wasix,
+  },
+  {
+    crate: "runtime",
+    target: Target.Wasm,
+  },
+  {
+    crate: "lib",
+    target: Target.Wasm,
+  },
+];
+
+const wasmPackBuilder = ({ crate, target }) => {
+  console.log("WASM", crate, target);
+  // wasm-pack packages
+  const { status } = spawnSync(
+    "wasm-pack",
+    ["build", release ? "--release" : "", ["--target", "web"]].flat(),
+    {
       stdio: "inherit",
       cwd: `./${WORKSPACE}/${crate}`,
-      env,
-    });
-    if (status !== 0) {
-      process.exit(status);
-    }
-    execSync(
-      `cp ./${WORKSPACE}/target/${target}/${release ? "release" : "debug"}/${crate}.wasm ./packages/core/src/wasm/`,
-    );
-  } else {
-    const { status } = spawnSync(
-      "wasm-pack",
-      ["build", release ? "--release" : "", ["--target", "web"]].flat(),
-      {
-        stdio: "inherit",
-        cwd: `./${WORKSPACE}/${crate}`,
-      },
-    );
-    const pkg = `./${WORKSPACE}/${crate}/pkg`;
-    execSync(`cp ${pkg}/lib_bg.wasm ./packages/lib/`);
-    execSync(`cp ${pkg}/lib.js ./packages/lib/`);
-    execSync(`cp ${pkg}/lib.d.ts ./packages/lib/`);
-    // TODO: Enable if you have snippets:
-    // execSync(`cp -r ${pkg}/snippets ./packages/lib/`);
+    },
+  );
+  if (status !== 0) {
+    process.exit(status);
+  }
 
-    if (status !== 0) {
-      process.exit(status);
-    }
+  const pkg = `./${WORKSPACE}/${crate}/pkg`;
+  execSync(`cp ${pkg}/${crate}_bg.wasm ./packages/${crate}/`);
+  execSync(`cp ${pkg}/${crate}.js ./packages/${crate}/`);
+  execSync(`cp ${pkg}/${crate}.d.ts ./packages/${crate}/`);
+  // TODO: Enable if you have snippets:
+  // execSync(`cp -r ${pkg}/snippets ./packages/lib/`);
+};
+
+const wasiBuilder = ({ crate, target }) => {
+  const app = crate.split("/")[1];
+  const CARGO_ARGS = [];
+  if (target === Target.Wasix) {
+    CARGO_ARGS.push("wasix");
+  }
+
+  CARGO_ARGS.push(...["build", ["--target", target]]);
+  if (release) {
+    CARGO_ARGS.push("--release");
+  } else {
+    env["RUST_BACKTRACE"] = 1;
+  }
+  console.log(CARGO_ARGS);
+  const { status } = spawnSync("cargo", CARGO_ARGS.flat(), {
+    stdio: "inherit",
+    cwd: `./${WORKSPACE}/${crate}`,
+    env,
+  });
+  if (status !== 0) {
+    process.exit(status);
+  }
+  execSync(`mkdir -p ./packages/core/src/wasm/apps/${app}/`);
+  execSync(
+    `cp ./${WORKSPACE}/target/${target}/${release ? "release" : "debug"}/${app}.wasm ./packages/core/src/wasm/apps/${app}/`,
+  );
+};
+
+crates.forEach((crate) => {
+  if (crate.target === Target.Wasm) {
+    wasmPackBuilder(crate);
+  } else {
+    wasiBuilder(crate);
   }
 });

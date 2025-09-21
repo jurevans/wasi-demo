@@ -1,9 +1,5 @@
 let wasm;
 
-const cachedTextDecoder = (typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }) : { decode: () => { throw Error('TextDecoder not available') } } );
-
-if (typeof TextDecoder !== 'undefined') { cachedTextDecoder.decode(); };
-
 let cachedUint8ArrayMemory0 = null;
 
 function getUint8ArrayMemory0() {
@@ -13,23 +9,25 @@ function getUint8ArrayMemory0() {
     return cachedUint8ArrayMemory0;
 }
 
-function getStringFromWasm0(ptr, len) {
-    ptr = ptr >>> 0;
+let cachedTextDecoder = (typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }) : { decode: () => { throw Error('TextDecoder not available') } } );
+
+if (typeof TextDecoder !== 'undefined') { cachedTextDecoder.decode(); };
+
+const MAX_SAFARI_DECODE_BYTES = 2146435072;
+let numBytesDecoded = 0;
+function decodeText(ptr, len) {
+    numBytesDecoded += len;
+    if (numBytesDecoded >= MAX_SAFARI_DECODE_BYTES) {
+        cachedTextDecoder = (typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }) : { decode: () => { throw Error('TextDecoder not available') } } );
+        cachedTextDecoder.decode();
+        numBytesDecoded = len;
+    }
     return cachedTextDecoder.decode(getUint8ArrayMemory0().subarray(ptr, ptr + len));
 }
-/**
- * @param {bigint} left
- * @param {bigint} right
- * @returns {bigint}
- */
-export function add(left, right) {
-    const ret = wasm.add(left, right);
-    return BigInt.asUintN(64, ret);
-}
 
-function getArrayU8FromWasm0(ptr, len) {
+function getStringFromWasm0(ptr, len) {
     ptr = ptr >>> 0;
-    return getUint8ArrayMemory0().subarray(ptr / 1, ptr / 1 + len);
+    return decodeText(ptr, len);
 }
 
 let WASM_VECTOR_LEN = 0;
@@ -88,18 +86,28 @@ function passStringToWasm0(arg, malloc, realloc) {
     return ptr;
 }
 
+function getArrayU8FromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return getUint8ArrayMemory0().subarray(ptr / 1, ptr / 1 + len);
+}
+
 function passArray8ToWasm0(arg, malloc) {
     const ptr = malloc(arg.length * 1, 1) >>> 0;
     getUint8ArrayMemory0().set(arg, ptr / 1);
     WASM_VECTOR_LEN = arg.length;
     return ptr;
 }
+
+function isLikeNone(x) {
+    return x === undefined || x === null;
+}
 /**
- * @enum {1 | 2}
+ * @enum {1 | 2 | 3}
  */
 export const MsgType = Object.freeze({
     Request: 1, "1": "Request",
     Response: 2, "2": "Response",
+    Exit: 3, "3": "Exit",
 });
 
 const MsgFinalization = (typeof FinalizationRegistry === 'undefined')
@@ -116,6 +124,19 @@ export class Msg {
         return obj;
     }
 
+    toJSON() {
+        return {
+            id: this.id,
+            msg_type: this.msg_type,
+            payload: this.payload,
+            bytes: this.bytes,
+        };
+    }
+
+    toString() {
+        return JSON.stringify(this);
+    }
+
     __destroy_into_raw() {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
@@ -130,11 +151,11 @@ export class Msg {
     /**
      * @returns {string}
      */
-    id() {
+    get id() {
         let deferred1_0;
         let deferred1_1;
         try {
-            const ret = wasm.msg_id(this.__wbg_ptr);
+            const ret = wasm.__wbg_get_msg_id(this.__wbg_ptr);
             deferred1_0 = ret[0];
             deferred1_1 = ret[1];
             return getStringFromWasm0(ret[0], ret[1]);
@@ -143,56 +164,117 @@ export class Msg {
         }
     }
     /**
-     * @returns {string}
+     * @param {string} arg0
      */
-    to_json() {
-        let deferred1_0;
-        let deferred1_1;
-        try {
-            const ptr = this.__destroy_into_raw();
-            const ret = wasm.msg_to_json(ptr);
-            deferred1_0 = ret[0];
-            deferred1_1 = ret[1];
-            return getStringFromWasm0(ret[0], ret[1]);
-        } finally {
-            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
-        }
+    set id(arg0) {
+        const ptr0 = passStringToWasm0(arg0, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.__wbg_set_msg_id(this.__wbg_ptr, ptr0, len0);
     }
     /**
-     * @returns {Uint8Array}
+     * @returns {MsgType}
      */
-    payload() {
-        const ret = wasm.msg_payload(this.__wbg_ptr);
-        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
-        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    get msg_type() {
+        const ret = wasm.__wbg_get_msg_msg_type(this.__wbg_ptr);
+        return ret;
+    }
+    /**
+     * @param {MsgType} arg0
+     */
+    set msg_type(arg0) {
+        wasm.__wbg_set_msg_msg_type(this.__wbg_ptr, arg0);
+    }
+    /**
+     * @returns {Uint8Array | undefined}
+     */
+    get payload() {
+        const ret = wasm.__wbg_get_msg_payload(this.__wbg_ptr);
+        let v1;
+        if (ret[0] !== 0) {
+            v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+            wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        }
         return v1;
     }
     /**
-     * @param {string} json
-     * @returns {Msg}
+     * @param {Uint8Array | null} [arg0]
      */
-    static from_json(json) {
-        const ptr0 = passStringToWasm0(json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.msg_from_json(ptr0, len0);
-        return Msg.__wrap(ret);
+    set payload(arg0) {
+        var ptr0 = isLikeNone(arg0) ? 0 : passArray8ToWasm0(arg0, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm.__wbg_set_msg_payload(this.__wbg_ptr, ptr0, len0);
     }
     /**
      * @param {string} id
      * @param {MsgType} msg_type
-     * @param {Uint8Array} payload
+     * @param {Uint8Array | null} [payload]
      */
     constructor(id, msg_type, payload) {
         const ptr0 = passStringToWasm0(id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passArray8ToWasm0(payload, wasm.__wbindgen_malloc);
-        const len1 = WASM_VECTOR_LEN;
+        var ptr1 = isLikeNone(payload) ? 0 : passArray8ToWasm0(payload, wasm.__wbindgen_malloc);
+        var len1 = WASM_VECTOR_LEN;
         const ret = wasm.msg_new(ptr0, len0, msg_type, ptr1, len1);
         this.__wbg_ptr = ret >>> 0;
         MsgFinalization.register(this, this.__wbg_ptr, this);
         return this;
     }
+    /**
+     * @returns {Uint8Array}
+     */
+    toBytes() {
+        const ret = wasm.msg_toBytes(this.__wbg_ptr);
+        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        return v1;
+    }
+    /**
+     * @returns {Uint8Array}
+     */
+    get bytes() {
+        const ret = wasm.msg_bytes(this.__wbg_ptr);
+        var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
+        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        return v1;
+    }
+    /**
+     * @returns {string}
+     */
+    toJson() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.msg_toJson(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
+     * @param {string} json
+     * @returns {Msg}
+     */
+    static fromJson(json) {
+        const ptr0 = passStringToWasm0(json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.msg_fromJson(ptr0, len0);
+        return Msg.__wrap(ret);
+    }
+    /**
+     * @param {Uint8Array} bytes
+     * @returns {Msg}
+     */
+    static fromBytes(bytes) {
+        const ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.msg_fromBytes(ptr0, len0);
+        return Msg.__wrap(ret);
+    }
 }
+
+const EXPECTED_RESPONSE_TYPES = new Set(['basic', 'cors', 'default']);
 
 async function __wbg_load(module, imports) {
     if (typeof Response === 'function' && module instanceof Response) {
@@ -201,7 +283,9 @@ async function __wbg_load(module, imports) {
                 return await WebAssembly.instantiateStreaming(module, imports);
 
             } catch (e) {
-                if (module.headers.get('Content-Type') != 'application/wasm') {
+                const validResponse = module.ok && EXPECTED_RESPONSE_TYPES.has(module.type);
+
+                if (validResponse && module.headers.get('Content-Type') !== 'application/wasm') {
                     console.warn("`WebAssembly.instantiateStreaming` failed because your server does not serve Wasm with `application/wasm` MIME type. Falling back to `WebAssembly.instantiate` which is slower. Original error:\n", e);
 
                 } else {

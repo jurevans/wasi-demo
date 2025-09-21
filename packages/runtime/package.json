@@ -1,0 +1,19 @@
+{
+  "name": "@wasi-demo/runtime",
+  "version": "1.0.0",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "type": "module",
+  "files": [
+    "runtime_bg.wasm",
+    "runtime.js",
+    "runtime.d.ts"
+  ],
+  "main": "runtime.js",
+  "types": "runtime.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

@@ -1,3 +1,4 @@
 [toolchain]
-channel = "nightly"
-targets = ["wasm32-wasip2", "wasm32-unknown-unknown"]
+# channel = "nightly"
+channel = "stable"
+targets = ["wasm32-unknown-unknown"]

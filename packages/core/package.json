@@ -13,6 +13,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@bytecodealliance/preview2-shim": "^0.17.2",
     "@dao-xyz/borsh": "^5.2.3",
     "@wasmer/sdk": "^0.9.0"
   }
